@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Crenix
 {
-    public class UISpinner : MonoBehaviour
+    public class Spinner : MonoBehaviour
     {
         [SerializeField] private Vector3 spinDirection;
 

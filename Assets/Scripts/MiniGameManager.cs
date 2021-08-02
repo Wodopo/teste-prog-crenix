@@ -5,11 +5,11 @@ namespace Crenix
 {
     public class MiniGameManager : MonoBehaviour
     {
-        [SerializeField] private UISlot[] worldSlots;
+        [SerializeField] private WorldSlot[] worldSlots;
 
         void OnEnable()
         {
-            foreach(var slot in worldSlots)
+            foreach (var slot in worldSlots)
             {
                 slot.OnActivate += OnCogGrabbed;
                 slot.OnDeactivate += OnCogReleased;
@@ -25,14 +25,15 @@ namespace Crenix
             }
         }
 
-        private void OnCogGrabbed(UISlot slot)
+        private void OnCogGrabbed(WorldSlot slot)
         {
-            if (worldSlots.Where(x => !x.Active).Count() > 0)
+            bool allActive = worldSlots.All(x => x.IsActive);
+            if (!allActive)
                 return;
             MiniGameEvents.OnMiniGameFinished.Invoke();
         }
 
-        private void OnCogReleased(UISlot slot)
+        private void OnCogReleased(WorldSlot slot)
         {
             MiniGameEvents.OnMiniGameRegressed.Invoke();
         }

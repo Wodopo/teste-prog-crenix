@@ -1,77 +1,56 @@
-﻿using System;
-using UnityEngine;
-using UnityEngine.EventSystems;
+﻿using UnityEngine;
 
 namespace Crenix
 {
-    public class UISlot : MonoBehaviour, IDropHandler
+    public class UISlot : MonoBehaviour, IGrabber
     {
-        [SerializeField] private bool useWorldSprite;
-        [SerializeField] private Vector3 offset;
+        [SerializeField] private Vector2 offset;
 
-        public UICog Cog { get; private set; }
+        public bool IsOccupied => Grabbable != null;
+        public bool IsActive { get; private set; } = false;
+        public IGrabbable Grabbable { get; private set; }
 
-        private bool active;
-        public bool Active
-        { 
-            get => active;
-            set
-            {
-                if (active == value)
-                    return;
-                active = value;
-                var evnt = active ? OnActivate : OnDeactivate;
-                evnt?.Invoke(this);
-            }
-        }
-
-        public event Action<UISlot> OnActivate;
-        public event Action<UISlot> OnDeactivate;
-        public event Action<UISlot, UICog> OnCogGrabbed;
-        public event Action<UISlot> OnCogReleased;
+        private IGrabbable originalGrabbable;
 
         void Awake()
         {
-            // Attempts to grab a Cog when the scene is loaded
-            var cog = GetComponentInChildren<UICog>();
-            if (cog == null)
+            var grabbable = GetComponentInChildren<IGrabbable>();
+            if (grabbable == null)
                 return;
-            cog.Slot = this;
-            GrabCog(cog);
+            originalGrabbable = grabbable;
+            InteractionManager.Grab(grabbable, this);
         }
 
-        public void OnDrop(PointerEventData eventData)
+        void OnEnable()
         {
-            if (Cog != null)
-                return;
-
-            UICog.LastDraggedCog.Slot.ReleaseCog();
-            UICog.LastDraggedCog.Slot = this;
+            MiniGameEvents.OnMiniGameReset += ResetState;
         }
 
-        public void GrabCog(UICog cog)
+        void OnDisable()
         {
-            Cog = cog;
-            cog.transform.SetParent(this.transform);
-            cog.transform.localPosition = offset;
-            cog.transform.localRotation = Quaternion.identity;
-            
-            if (useWorldSprite)
-                cog.SetWorldSprite();
-
-            Active = true;
-            OnCogGrabbed?.Invoke(this, cog);
+            MiniGameEvents.OnMiniGameReset -= ResetState;
         }
 
-        public void Deactivate()
+        private void ResetState()
         {
-            Active = false;
+            IsActive = false;
+            Release();
+            originalGrabbable.SetActive(true);
+            InteractionManager.Grab(originalGrabbable, this);
         }
 
-        public void ReleaseCog()
+        public void Grab(IGrabbable grababble)
         {
-            Cog = null;
-            OnCogReleased?.Invoke(this);
+            this.Grabbable = grababble;
+            grababble.SetParent(this.transform);
+            grababble.LocalPosition = Vector2.zero + offset;
+            IsActive = true;
+        }
+
+        public void Release()
+        {
+            this.Grabbable = null;
+            IsActive = false;
         }
     }
 }
